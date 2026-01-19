@@ -94,6 +94,14 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label asp-for="RequestedFor" class="form-label"></label>
+                                <input asp-for="RequestedFor" class="form-control" placeholder="Enter username (e.g., jsmith)" />
+                                <span asp-validation-for="RequestedFor" class="text-danger"></span>
+                                <small class="form-text text-muted">Who is this ticket for? Enter their AD username</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label asp-for="AssignedTo" class="form-label"></label>
                                 <select asp-for="AssignedTo" class="form-select">
                                     <option value="">Unassigned</option>

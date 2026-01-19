@@ -145,7 +145,7 @@ namespace ITHelpDesk.Web.Controllers
         // POST: Tickets/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Title,Description,Priority,Category,AssignedTo,DueDate")] Ticket ticket)
+        public async Task<IActionResult> Create([Bind("Title,Description,Priority,Category,RequestedFor,AssignedTo,DueDate")] Ticket ticket)
         {
             if (ModelState.IsValid)
             {
@@ -159,6 +159,16 @@ namespace ITHelpDesk.Web.Controllers
                 if (creatorUser != null)
                 {
                     ticket.CreatedByEmail = creatorUser.Email;
+                }
+
+                // Get requested for user email from AD if specified
+                if (!string.IsNullOrWhiteSpace(ticket.RequestedFor))
+                {
+                    var requestedForUser = _adService.GetUserByUsername(ticket.RequestedFor);
+                    if (requestedForUser != null)
+                    {
+                        ticket.RequestedForEmail = requestedForUser.Email;
+                    }
                 }
 
                 // Get assigned user email from AD if assigned
@@ -224,7 +234,7 @@ namespace ITHelpDesk.Web.Controllers
         // POST: Tickets/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("TicketId,Title,Description,Status,Priority,Category,AssignedTo,DueDate,CreatedBy,CreatedByEmail,CreatedDate")] Ticket ticket)
+        public async Task<IActionResult> Edit(int id, [Bind("TicketId,Title,Description,Status,Priority,Category,RequestedFor,AssignedTo,DueDate,CreatedBy,CreatedByEmail,CreatedDate")] Ticket ticket)
         {
             if (id != ticket.TicketId)
             {
@@ -245,6 +255,16 @@ namespace ITHelpDesk.Web.Controllers
 
                     // Track changes and update assigned user email
                     await TrackChanges(existingTicket, ticket, currentUser);
+
+                    // Get requested for user email from AD if changed
+                    if (ticket.RequestedFor != existingTicket.RequestedFor && !string.IsNullOrWhiteSpace(ticket.RequestedFor))
+                    {
+                        var requestedForUser = _adService.GetUserByUsername(ticket.RequestedFor);
+                        if (requestedForUser != null)
+                        {
+                            ticket.RequestedForEmail = requestedForUser.Email;
+                        }
+                    }
 
                     // Get assigned user email from AD if changed
                     if (ticket.AssignedTo != existingTicket.AssignedTo && !string.IsNullOrWhiteSpace(ticket.AssignedTo))

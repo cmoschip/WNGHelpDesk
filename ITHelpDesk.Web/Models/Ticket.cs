@@ -40,6 +40,13 @@ namespace ITHelpDesk.Web.Models
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
         [StringLength(255)]
+        [Display(Name = "Requested For")]
+        public string? RequestedFor { get; set; }
+
+        [StringLength(255)]
+        public string? RequestedForEmail { get; set; }
+
+        [StringLength(255)]
         [Display(Name = "Assigned To")]
         public string? AssignedTo { get; set; }
 

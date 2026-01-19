@@ -129,6 +129,7 @@
                             <th>Status</th>
                             <th>Priority</th>
                             <th>Category</th>
+                            <th>Requested For</th>
                             <th>Assigned To</th>
                             <th>Created</th>
                             <th>Due</th>
@@ -194,6 +195,16 @@
                                     }
                                 </td>
                                 <td>@ticket.Category</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(ticket.RequestedFor))
+                                    {
+                                        <text>@ticket.RequestedFor</text>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
                                 <td>
                                     @if (!string.IsNullOrWhiteSpace(ticket.AssignedTo))
                                     {

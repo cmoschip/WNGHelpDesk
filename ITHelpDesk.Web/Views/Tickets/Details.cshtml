@@ -84,6 +84,21 @@
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
+                        <strong>Requested For:</strong>
+                        @if (!string.IsNullOrWhiteSpace(Model.Ticket.RequestedFor))
+                        {
+                            <text>@Model.Ticket.RequestedFor</text>
+                            @if (!string.IsNullOrWhiteSpace(Model.Ticket.RequestedForEmail))
+                            {
+                                <br /><small class="text-muted">@Model.Ticket.RequestedForEmail</small>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-muted">Not specified</span>
+                        }
+                    </div>
+                    <div class="col-md-6">
                         <strong>Assigned To:</strong>
                         @if (!string.IsNullOrWhiteSpace(Model.Ticket.AssignedTo))
                         {
@@ -94,6 +109,8 @@
                             <span class="text-muted">Unassigned</span>
                         }
                     </div>
+                </div>
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <strong>Created:</strong> @Model.Ticket.CreatedDate.ToString("MM/dd/yyyy hh:mm tt")
                     </div>
