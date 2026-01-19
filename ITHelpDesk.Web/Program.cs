@@ -1,6 +1,6 @@
 using ITHelpDesk.Web.Data;
 using ITHelpDesk.Web.Services;
-using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.Server.IISIntegration;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,9 +12,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<HelpDeskContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add Windows Authentication
-builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
-    .AddNegotiate();
+// Add Windows Authentication for IIS
+builder.Services.AddAuthentication(IISDefaults.AuthenticationScheme);
 
 builder.Services.AddAuthorization(options =>
 {
