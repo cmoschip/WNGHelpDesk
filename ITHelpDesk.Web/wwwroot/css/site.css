@@ -1,0 +1,157 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  white-space: nowrap;
+  line-height: 60px;
+}
+
+/* Custom styles for IT Help Desk */
+
+.navbar-brand {
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+.card {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+}
+
+.card-header h5,
+.card-header h6 {
+  margin-bottom: 0;
+}
+
+.badge {
+  font-size: 0.85rem;
+  padding: 0.35em 0.65em;
+}
+
+.table {
+  font-size: 0.95rem;
+}
+
+.text-pre-wrap {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Status badges */
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #000 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+/* Overdue row highlighting */
+.table-danger {
+  background-color: #f8d7da !important;
+}
+
+/* Alert icons */
+.alert i {
+  margin-right: 0.5rem;
+}
+
+/* Card statistics */
+.card.text-white h2 {
+  font-weight: bold;
+  margin-bottom: 0;
+}
+
+.card.text-white .card-title {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Breadcrumb styling */
+.breadcrumb {
+  background-color: #f8f9fa;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Form styling */
+.form-label {
+  font-weight: 500;
+}
+
+/* Button spacing */
+.btn {
+  margin-right: 0.25rem;
+}
+
+.btn:last-child {
+  margin-right: 0;
+}
+
+/* Navbar icons */
+.navbar .bi {
+  margin-right: 0.25rem;
+}
+
+/* Card body scrolling */
+.card-body[style*="overflow-y"] {
+  scrollbar-width: thin;
+}
+
+.card-body[style*="overflow-y"]::-webkit-scrollbar {
+  width: 8px;
+}
+
+.card-body[style*="overflow-y"]::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.card-body[style*="overflow-y"]::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.card-body[style*="overflow-y"]::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

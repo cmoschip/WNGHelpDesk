@@ -1,0 +1,179 @@
+@model List<Ticket>
+@{
+    ViewData["Title"] = "Ticket History";
+    var displayName = ViewBag.DisplayName as string;
+}
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <h2><i class="bi bi-clock-history"></i> Ticket History for @displayName</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-action="Index">All Tickets</a></li>
+                <li class="breadcrumb-item active" aria-current="page">My History</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5><i class="bi bi-bar-chart"></i> Summary Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary">
+                            <div class="card-body">
+                                <h6 class="card-title">Total Tickets</h6>
+                                <h3>@Model.Count</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning">
+                            <div class="card-body">
+                                <h6 class="card-title">Open Tickets</h6>
+                                <h3>@Model.Count(t => t.Status != "Closed")</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success">
+                            <div class="card-body">
+                                <h6 class="card-title">Resolved</h6>
+                                <h3>@Model.Count(t => t.Status == "Resolved")</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-secondary">
+                            <div class="card-body">
+                                <h6 class="card-title">Closed</h6>
+                                <h3>@Model.Count(t => t.Status == "Closed")</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5><i class="bi bi-list-ul"></i> All Tickets (@Model.Count)</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Category</th>
+                            <th>Created</th>
+                            <th>Assigned To</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ticket in Model)
+                        {
+                            <tr class="@(ticket.IsOverdue ? "table-danger" : "")">
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@ticket.TicketId" class="fw-bold">
+                                        #@ticket.TicketId
+                                    </a>
+                                </td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@ticket.TicketId">
+                                        @ticket.Title
+                                    </a>
+                                    @if (ticket.IsOverdue)
+                                    {
+                                        <span class="badge bg-danger">OVERDUE</span>
+                                    }
+                                </td>
+                                <td>
+                                    @switch (ticket.Status)
+                                    {
+                                        case "New":
+                                            <span class="badge bg-primary">@ticket.Status</span>
+                                            break;
+                                        case "In Progress":
+                                            <span class="badge bg-info">@ticket.Status</span>
+                                            break;
+                                        case "Resolved":
+                                            <span class="badge bg-success">@ticket.Status</span>
+                                            break;
+                                        case "Closed":
+                                            <span class="badge bg-secondary">@ticket.Status</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-light text-dark">@ticket.Status</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    @switch (ticket.Priority)
+                                    {
+                                        case "Critical":
+                                            <span class="badge bg-danger">@ticket.Priority</span>
+                                            break;
+                                        case "High":
+                                            <span class="badge bg-warning">@ticket.Priority</span>
+                                            break;
+                                        case "Medium":
+                                            <span class="badge bg-info">@ticket.Priority</span>
+                                            break;
+                                        case "Low":
+                                            <span class="badge bg-secondary">@ticket.Priority</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-light text-dark">@ticket.Priority</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>@ticket.Category</td>
+                                <td>@ticket.CreatedDate.ToString("MM/dd/yyyy")</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(ticket.AssignedTo))
+                                    {
+                                        <text>@ticket.AssignedTo</text>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Unassigned</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@ticket.TicketId" class="btn btn-sm btn-info" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info" role="alert">
+                <i class="bi bi-info-circle"></i> No tickets found for this user.
+            </div>
+        }
+    </div>
+    <div class="card-footer">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to All Tickets
+        </a>
+    </div>
+</div>

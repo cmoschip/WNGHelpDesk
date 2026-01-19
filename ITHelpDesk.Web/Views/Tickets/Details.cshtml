@@ -1,0 +1,253 @@
+@model TicketDetailsViewModel
+@{
+    ViewData["Title"] = $"Ticket #{Model.Ticket.TicketId} - {Model.Ticket.Title}";
+}
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <h2>
+            <i class="bi bi-ticket-detailed"></i> Ticket #@Model.Ticket.TicketId
+            @if (Model.Ticket.IsOverdue)
+            {
+                <span class="badge bg-danger">OVERDUE</span>
+            }
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-action="Index">All Tickets</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Ticket #@Model.Ticket.TicketId</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Ticket Details Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="bi bi-info-circle"></i> Ticket Details</h5>
+            </div>
+            <div class="card-body">
+                <h3>@Model.Ticket.Title</h3>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Status:</strong>
+                        @switch (Model.Ticket.Status)
+                        {
+                            case "New":
+                                <span class="badge bg-primary">@Model.Ticket.Status</span>
+                                break;
+                            case "In Progress":
+                                <span class="badge bg-info">@Model.Ticket.Status</span>
+                                break;
+                            case "Resolved":
+                                <span class="badge bg-success">@Model.Ticket.Status</span>
+                                break;
+                            case "Closed":
+                                <span class="badge bg-secondary">@Model.Ticket.Status</span>
+                                break;
+                            default:
+                                <span class="badge bg-light text-dark">@Model.Ticket.Status</span>
+                                break;
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Priority:</strong>
+                        @switch (Model.Ticket.Priority)
+                        {
+                            case "Critical":
+                                <span class="badge bg-danger">@Model.Ticket.Priority</span>
+                                break;
+                            case "High":
+                                <span class="badge bg-warning">@Model.Ticket.Priority</span>
+                                break;
+                            case "Medium":
+                                <span class="badge bg-info">@Model.Ticket.Priority</span>
+                                break;
+                            case "Low":
+                                <span class="badge bg-secondary">@Model.Ticket.Priority</span>
+                                break;
+                            default:
+                                <span class="badge bg-light text-dark">@Model.Ticket.Priority</span>
+                                break;
+                        }
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Category:</strong> @Model.Ticket.Category
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Created By:</strong> @Model.Ticket.CreatedBy
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Assigned To:</strong>
+                        @if (!string.IsNullOrWhiteSpace(Model.Ticket.AssignedTo))
+                        {
+                            @Model.Ticket.AssignedTo
+                        }
+                        else
+                        {
+                            <span class="text-muted">Unassigned</span>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Created:</strong> @Model.Ticket.CreatedDate.ToString("MM/dd/yyyy hh:mm tt")
+                    </div>
+                </div>
+                @if (Model.Ticket.DueDate.HasValue)
+                {
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Due Date:</strong> @Model.Ticket.DueDate.Value.ToString("MM/dd/yyyy")
+                            @if (Model.Ticket.IsOverdue)
+                            {
+                                <span class="badge bg-danger">OVERDUE</span>
+                            }
+                        </div>
+                    </div>
+                }
+                <hr />
+                <div class="mb-3">
+                    <h5>Description:</h5>
+                    <p class="text-pre-wrap">@Model.Ticket.Description</p>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a asp-action="Edit" asp-route-id="@Model.Ticket.TicketId" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Edit Ticket
+                </a>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5><i class="bi bi-chat-dots"></i> Comments & Updates</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Comments.Any())
+                {
+                    @foreach (var comment in Model.Comments)
+                    {
+                        <div class="card mb-3 @(comment.CommentType == "System" || comment.CommentType == "Status Change" || comment.CommentType == "Assignment" ? "border-secondary" : "")">
+                            <div class="card-header @(comment.CommentType == "System" || comment.CommentType == "Status Change" || comment.CommentType == "Assignment" ? "bg-light" : "")">
+                                <strong>@comment.CreatedBy</strong>
+                                <span class="text-muted">- @comment.CreatedDate.ToString("MM/dd/yyyy hh:mm tt")</span>
+                                @if (comment.CommentType != "Comment")
+                                {
+                                    <span class="badge bg-secondary">@comment.CommentType</span>
+                                }
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-0 text-pre-wrap">@comment.CommentText</p>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">No comments yet.</p>
+                }
+
+                <hr />
+                <h6>Add Comment:</h6>
+                <form method="post" asp-action="AddComment">
+                    <input type="hidden" name="ticketId" value="@Model.Ticket.TicketId" />
+                    <div class="mb-3">
+                        <textarea class="form-control" name="commentText" rows="4" placeholder="Enter your comment..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Comment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Quick Info Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6><i class="bi bi-speedometer2"></i> Quick Info</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <strong>Ticket ID:</strong> #@Model.Ticket.TicketId
+                    </li>
+                    <li class="mb-2">
+                        <strong>Created:</strong><br />
+                        @Model.Ticket.CreatedDate.ToString("MM/dd/yyyy hh:mm tt")
+                    </li>
+                    @if (Model.Ticket.LastModifiedDate.HasValue)
+                    {
+                        <li class="mb-2">
+                            <strong>Last Modified:</strong><br />
+                            @Model.Ticket.LastModifiedDate.Value.ToString("MM/dd/yyyy hh:mm tt")<br />
+                            <small class="text-muted">by @Model.Ticket.LastModifiedBy</small>
+                        </li>
+                    }
+                    @if (Model.Ticket.ResolvedDate.HasValue)
+                    {
+                        <li class="mb-2">
+                            <strong>Resolved:</strong><br />
+                            @Model.Ticket.ResolvedDate.Value.ToString("MM/dd/yyyy hh:mm tt")
+                        </li>
+                    }
+                    @if (Model.Ticket.ClosedDate.HasValue)
+                    {
+                        <li class="mb-2">
+                            <strong>Closed:</strong><br />
+                            @Model.Ticket.ClosedDate.Value.ToString("MM/dd/yyyy hh:mm tt")
+                        </li>
+                    }
+                    <li class="mb-2">
+                        <strong>Comments:</strong> @Model.Comments.Count
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Change History Card -->
+        @if (Model.History.Any())
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-warning">
+                    <h6><i class="bi bi-clock-history"></i> Change History</h6>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <ul class="list-unstyled">
+                        @foreach (var history in Model.History)
+                        {
+                            <li class="mb-3">
+                                <small class="text-muted">@history.ChangedDate.ToString("MM/dd/yyyy hh:mm tt")</small><br />
+                                <strong>@history.ChangedBy</strong> changed <strong>@history.FieldChanged</strong><br />
+                                @if (!string.IsNullOrWhiteSpace(history.OldValue))
+                                {
+                                    <span class="text-muted">From: @history.OldValue</span><br />
+                                }
+                                <span class="text-success">To: @history.NewValue</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .text-pre-wrap {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+}

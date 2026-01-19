@@ -1,0 +1,142 @@
+@model Ticket
+@{
+    ViewData["Title"] = "Create New Ticket";
+}
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <h2><i class="bi bi-plus-circle"></i> Create New Ticket</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-action="Index">All Tickets</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Create New Ticket</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="bi bi-ticket-detailed"></i> Ticket Information</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label"></label>
+                        <input asp-for="Title" class="form-control" placeholder="Brief description of the issue" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="8" placeholder="Detailed description of the issue, including steps to reproduce, error messages, etc."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Priority" class="form-label"></label>
+                                <select asp-for="Priority" class="form-select">
+                                    <option value="Low">Low - Can wait, minor issue</option>
+                                    <option value="Medium" selected>Medium - Normal priority</option>
+                                    <option value="High">High - Impacting work</option>
+                                    <option value="Critical">Critical - System down/major outage</option>
+                                </select>
+                                <span asp-validation-for="Priority" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Category" class="form-label"></label>
+                                <select asp-for="Category" class="form-select">
+                                    <option value="">Select a category...</option>
+                                    <option value="Hardware">Hardware</option>
+                                    <option value="Software">Software</option>
+                                    <option value="Network">Network</option>
+                                    <option value="Access/Permissions">Access/Permissions</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <span asp-validation-for="Category" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="AssignedTo" class="form-label"></label>
+                                <select asp-for="AssignedTo" class="form-select">
+                                    <option value="">Unassigned</option>
+                                    @foreach (var staff in ViewBag.ITStaff as List<ADUser>)
+                                    {
+                                        <option value="@staff.Username">@staff.DisplayName (@staff.Username)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="AssignedTo" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="DueDate" class="form-label"></label>
+                                <input asp-for="DueDate" type="date" class="form-control" />
+                                <span asp-validation-for="DueDate" class="text-danger"></span>
+                                <small class="form-text text-muted">Optional - Leave blank if no due date</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Create Ticket
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6><i class="bi bi-info-circle"></i> Tips for Creating Tickets</h6>
+            </div>
+            <div class="card-body">
+                <h6>Title:</h6>
+                <ul>
+                    <li>Keep it brief and descriptive</li>
+                    <li>Example: "Printer not working in Room 205"</li>
+                </ul>
+
+                <h6>Description:</h6>
+                <ul>
+                    <li>Provide detailed information</li>
+                    <li>Include error messages if any</li>
+                    <li>List steps to reproduce the issue</li>
+                    <li>Mention what you've already tried</li>
+                </ul>
+
+                <h6>Priority Levels:</h6>
+                <ul>
+                    <li><strong>Critical:</strong> System down, major outage</li>
+                    <li><strong>High:</strong> Significantly impacting work</li>
+                    <li><strong>Medium:</strong> Normal priority issue</li>
+                    <li><strong>Low:</strong> Minor issue, can wait</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
