@@ -1,9 +1,15 @@
 using ITHelpDesk.Web.Data;
 using ITHelpDesk.Web.Services;
 using Microsoft.AspNetCore.Server.IISIntegration;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Data Protection to persist keys (fixes antiforgery token issues)
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\inetpub\wwwroot\ITHelpDesk\App_Data\DataProtectionKeys"))
+    .SetApplicationName("ITHelpDesk");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
