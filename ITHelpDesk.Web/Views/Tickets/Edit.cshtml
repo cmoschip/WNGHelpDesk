@@ -144,4 +144,37 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Autocomplete for Requested For field
+            $("#RequestedFor").autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: "/api/Users/Search",
+                        data: { term: request.term },
+                        success: function(data) {
+                            response(data.map(function(item) {
+                                return {
+                                    label: item.label,
+                                    value: item.username
+                                };
+                            }));
+                        },
+                        error: function() {
+                            response([]);
+                        }
+                    });
+                },
+                minLength: 2,
+                select: function(event, ui) {
+                    $(this).val(ui.item.value);
+                    return false;
+                }
+            });
+        });
+    </script>
 }
