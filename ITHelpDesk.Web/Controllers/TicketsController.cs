@@ -254,8 +254,8 @@ namespace ITHelpDesk.Web.Controllers
                         await _emailService.SendTicketAssignedEmailAsync(
                             ticket.TicketId,
                             ticket.AssignedToEmail,
-                            ticket.AssignedTo ?? "IT Staff",
-                            ticket.CreatedBy);
+                            ticket.AssignedToName ?? ticket.AssignedTo ?? "IT Staff",
+                            ticket.CreatedByName ?? ticket.CreatedBy);
                     }
                 }
                 catch (Exception ex)
@@ -422,8 +422,8 @@ namespace ITHelpDesk.Web.Controllers
                             await _emailService.SendTicketAssignedEmailAsync(
                                 ticket.TicketId,
                                 ticket.AssignedToEmail,
-                                ticket.AssignedTo ?? "IT Staff",
-                                currentUser);
+                                ticket.AssignedToName ?? ticket.AssignedTo ?? "IT Staff",
+                                currentUserName ?? currentUser);
                         }
                         // For any other updates - notify requested for person
                         else if (!string.IsNullOrWhiteSpace(ticket.RequestedForEmail))

@@ -198,7 +198,7 @@
                                 <td>
                                     @if (!string.IsNullOrWhiteSpace(ticket.RequestedFor))
                                     {
-                                        <text>@ticket.RequestedFor</text>
+                                        <text>@(ticket.RequestedForName ?? ticket.RequestedFor)</text>
                                     }
                                     else
                                     {
@@ -208,7 +208,7 @@
                                 <td>
                                     @if (!string.IsNullOrWhiteSpace(ticket.AssignedTo))
                                     {
-                                        <text>@ticket.AssignedTo</text>
+                                        <text>@(ticket.AssignedToName ?? ticket.AssignedTo)</text>
                                     }
                                     else
                                     {
