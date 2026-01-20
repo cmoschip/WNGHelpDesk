@@ -174,29 +174,32 @@ namespace ITHelpDesk.Web.Controllers
                 ticket.CreatedDate = DateTime.Now;
                 ticket.Status = "New";
 
-                // Get creator email from AD
+                // Get creator info from AD
                 var creatorUser = _adService.GetUserByUsername(ticket.CreatedBy);
                 if (creatorUser != null)
                 {
+                    ticket.CreatedByName = creatorUser.DisplayName;
                     ticket.CreatedByEmail = creatorUser.Email;
                 }
 
-                // Get requested for user email from AD if specified
+                // Get requested for user info from AD if specified
                 if (!string.IsNullOrWhiteSpace(ticket.RequestedFor))
                 {
                     var requestedForUser = _adService.GetUserByUsername(ticket.RequestedFor);
                     if (requestedForUser != null)
                     {
+                        ticket.RequestedForName = requestedForUser.DisplayName;
                         ticket.RequestedForEmail = requestedForUser.Email;
                     }
                 }
 
-                // Get assigned user email from AD if assigned
+                // Get assigned user info from AD if assigned
                 if (!string.IsNullOrWhiteSpace(ticket.AssignedTo))
                 {
                     var assignedUser = _adService.GetUserByUsername(ticket.AssignedTo);
                     if (assignedUser != null)
                     {
+                        ticket.AssignedToName = assignedUser.DisplayName;
                         ticket.AssignedToEmail = assignedUser.Email;
                     }
                 }
@@ -211,16 +214,17 @@ namespace ITHelpDesk.Web.Controllers
                     CommentText = "Ticket created.",
                     CommentType = "System",
                     CreatedBy = ticket.CreatedBy,
+                    CreatedByName = ticket.CreatedByName,
                     CreatedByEmail = ticket.CreatedByEmail,
                     CreatedDate = DateTime.Now
                 };
                 _context.TicketComments.Add(initialComment);
 
                 // Log history
-                await LogHistory(ticket.TicketId, "Status", null, "New", ticket.CreatedBy);
+                await LogHistory(ticket.TicketId, "Status", null, "New", ticket.CreatedBy, ticket.CreatedByName);
                 if (!string.IsNullOrWhiteSpace(ticket.AssignedTo))
                 {
-                    await LogHistory(ticket.TicketId, "AssignedTo", null, ticket.AssignedTo, ticket.CreatedBy);
+                    await LogHistory(ticket.TicketId, "AssignedTo", null, ticket.AssignedTo, ticket.CreatedBy, ticket.CreatedByName);
                 }
 
                 await _context.SaveChangesAsync();
@@ -228,7 +232,7 @@ namespace ITHelpDesk.Web.Controllers
                 // Handle file attachments
                 if (attachments != null && attachments.Any())
                 {
-                    await SaveAttachments(ticket.TicketId, attachments, ticket.CreatedBy);
+                    await SaveAttachments(ticket.TicketId, attachments, ticket.CreatedBy, ticket.CreatedByName);
                 }
 
                 // Send email notifications
@@ -311,32 +315,55 @@ namespace ITHelpDesk.Web.Controllers
 
                     var currentUser = User.Identity?.Name ?? "Unknown";
 
-                    // Track changes and update assigned user email
-                    await TrackChanges(existingTicket, ticket, currentUser);
+                    // Get current user display name from AD
+                    var currentUserInfo = _adService.GetUserByUsername(currentUser);
+                    var currentUserName = currentUserInfo?.DisplayName;
 
-                    // Get requested for user email from AD if changed
+                    // Track changes and update assigned user email
+                    await TrackChanges(existingTicket, ticket, currentUser, currentUserName);
+
+                    // Get requested for user info from AD if changed
                     if (ticket.RequestedFor != existingTicket.RequestedFor && !string.IsNullOrWhiteSpace(ticket.RequestedFor))
                     {
                         var requestedForUser = _adService.GetUserByUsername(ticket.RequestedFor);
                         if (requestedForUser != null)
                         {
+                            ticket.RequestedForName = requestedForUser.DisplayName;
                             ticket.RequestedForEmail = requestedForUser.Email;
                         }
                     }
+                    else
+                    {
+                        // Preserve existing values if not changed
+                        ticket.RequestedForName = existingTicket.RequestedForName;
+                        ticket.RequestedForEmail = existingTicket.RequestedForEmail;
+                    }
 
-                    // Get assigned user email from AD if changed
+                    // Get assigned user info from AD if changed
                     if (ticket.AssignedTo != existingTicket.AssignedTo && !string.IsNullOrWhiteSpace(ticket.AssignedTo))
                     {
                         var assignedUser = _adService.GetUserByUsername(ticket.AssignedTo);
                         if (assignedUser != null)
                         {
+                            ticket.AssignedToName = assignedUser.DisplayName;
                             ticket.AssignedToEmail = assignedUser.Email;
                         }
+                    }
+                    else
+                    {
+                        // Preserve existing values if not changed
+                        ticket.AssignedToName = existingTicket.AssignedToName;
+                        ticket.AssignedToEmail = existingTicket.AssignedToEmail;
                     }
 
                     // Update system fields
                     ticket.LastModifiedBy = currentUser;
+                    ticket.LastModifiedByName = currentUserName;
                     ticket.LastModifiedDate = DateTime.Now;
+
+                    // Preserve original creation info
+                    ticket.CreatedByName = existingTicket.CreatedByName;
+                    ticket.CreatedByEmail = existingTicket.CreatedByEmail;
 
                     // Set resolved/closed dates based on status
                     if (ticket.Status == "Resolved" && existingTicket.Status != "Resolved")
@@ -358,7 +385,7 @@ namespace ITHelpDesk.Web.Controllers
                     // Handle file attachments
                     if (attachments != null && attachments.Any())
                     {
-                        await SaveAttachments(ticket.TicketId, attachments, currentUser);
+                        await SaveAttachments(ticket.TicketId, attachments, currentUser, currentUserName);
                     }
 
                     // Send email notifications based on status changes
@@ -456,6 +483,7 @@ namespace ITHelpDesk.Web.Controllers
                 CommentText = commentText,
                 CommentType = "Comment",
                 CreatedBy = currentUser,
+                CreatedByName = adUser?.DisplayName,
                 CreatedByEmail = adUser?.Email,
                 CreatedDate = DateTime.Now
             };
@@ -464,6 +492,7 @@ namespace ITHelpDesk.Web.Controllers
 
             // Update ticket modified info
             ticket.LastModifiedBy = currentUser;
+            ticket.LastModifiedByName = adUser?.DisplayName;
             ticket.LastModifiedDate = DateTime.Now;
 
             await _context.SaveChangesAsync();
@@ -531,11 +560,11 @@ namespace ITHelpDesk.Web.Controllers
             return _context.Tickets.Any(e => e.TicketId == id);
         }
 
-        private async Task TrackChanges(Ticket oldTicket, Ticket newTicket, string changedBy)
+        private async Task TrackChanges(Ticket oldTicket, Ticket newTicket, string changedBy, string? changedByName = null)
         {
             if (oldTicket.Status != newTicket.Status)
             {
-                await LogHistory(newTicket.TicketId, "Status", oldTicket.Status, newTicket.Status, changedBy);
+                await LogHistory(newTicket.TicketId, "Status", oldTicket.Status, newTicket.Status, changedBy, changedByName);
 
                 // Add system comment for status change
                 var comment = new TicketComment
@@ -544,6 +573,7 @@ namespace ITHelpDesk.Web.Controllers
                     CommentText = $"Status changed from '{oldTicket.Status}' to '{newTicket.Status}'.",
                     CommentType = "Status Change",
                     CreatedBy = changedBy,
+                    CreatedByName = changedByName,
                     CreatedDate = DateTime.Now
                 };
                 _context.TicketComments.Add(comment);
@@ -551,25 +581,27 @@ namespace ITHelpDesk.Web.Controllers
 
             if (oldTicket.Priority != newTicket.Priority)
             {
-                await LogHistory(newTicket.TicketId, "Priority", oldTicket.Priority, newTicket.Priority, changedBy);
+                await LogHistory(newTicket.TicketId, "Priority", oldTicket.Priority, newTicket.Priority, changedBy, changedByName);
             }
 
             if (oldTicket.Category != newTicket.Category)
             {
-                await LogHistory(newTicket.TicketId, "Category", oldTicket.Category, newTicket.Category, changedBy);
+                await LogHistory(newTicket.TicketId, "Category", oldTicket.Category, newTicket.Category, changedBy, changedByName);
             }
 
             if (oldTicket.AssignedTo != newTicket.AssignedTo)
             {
-                await LogHistory(newTicket.TicketId, "AssignedTo", oldTicket.AssignedTo, newTicket.AssignedTo, changedBy);
+                await LogHistory(newTicket.TicketId, "AssignedTo", oldTicket.AssignedToName, newTicket.AssignedToName, changedBy, changedByName);
 
                 // Add system comment for assignment
+                var assignedToName = newTicket.AssignedToName ?? newTicket.AssignedTo ?? "Unassigned";
                 var comment = new TicketComment
                 {
                     TicketId = newTicket.TicketId,
-                    CommentText = $"Ticket assigned to '{newTicket.AssignedTo}'.",
+                    CommentText = $"Ticket assigned to '{assignedToName}'.",
                     CommentType = "Assignment",
                     CreatedBy = changedBy,
+                    CreatedByName = changedByName,
                     CreatedDate = DateTime.Now
                 };
                 _context.TicketComments.Add(comment);
@@ -577,11 +609,11 @@ namespace ITHelpDesk.Web.Controllers
 
             if (oldTicket.Title != newTicket.Title)
             {
-                await LogHistory(newTicket.TicketId, "Title", oldTicket.Title, newTicket.Title, changedBy);
+                await LogHistory(newTicket.TicketId, "Title", oldTicket.Title, newTicket.Title, changedBy, changedByName);
             }
         }
 
-        private async Task LogHistory(int ticketId, string fieldChanged, string? oldValue, string? newValue, string changedBy)
+        private async Task LogHistory(int ticketId, string fieldChanged, string? oldValue, string? newValue, string changedBy, string? changedByName = null)
         {
             var history = new TicketHistory
             {
@@ -590,6 +622,7 @@ namespace ITHelpDesk.Web.Controllers
                 OldValue = oldValue,
                 NewValue = newValue,
                 ChangedBy = changedBy,
+                ChangedByName = changedByName,
                 ChangedDate = DateTime.Now
             };
 
@@ -597,7 +630,7 @@ namespace ITHelpDesk.Web.Controllers
             await _context.SaveChangesAsync();
         }
 
-        private async Task SaveAttachments(int ticketId, List<IFormFile> attachments, string uploadedBy)
+        private async Task SaveAttachments(int ticketId, List<IFormFile> attachments, string uploadedBy, string? uploadedByName = null)
         {
             var uploadPath = Path.Combine(_environment.ContentRootPath, "App_Data", "Attachments", ticketId.ToString());
             Directory.CreateDirectory(uploadPath);
@@ -633,6 +666,7 @@ namespace ITHelpDesk.Web.Controllers
                         FileSize = file.Length,
                         ContentType = file.ContentType,
                         UploadedBy = uploadedBy,
+                        UploadedByName = uploadedByName,
                         UploadedDate = DateTime.Now
                     };
 

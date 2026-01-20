@@ -24,6 +24,9 @@ namespace ITHelpDesk.Web.Models
         public string CreatedBy { get; set; } = string.Empty;
 
         [StringLength(255)]
+        public string? CreatedByName { get; set; }
+
+        [StringLength(255)]
         public string? CreatedByEmail { get; set; }
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;

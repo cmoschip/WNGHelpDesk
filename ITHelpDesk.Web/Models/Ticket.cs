@@ -32,6 +32,9 @@ namespace ITHelpDesk.Web.Models
         public string CreatedBy { get; set; } = string.Empty;
 
         [StringLength(255)]
+        public string? CreatedByName { get; set; }
+
+        [StringLength(255)]
         public string? CreatedByEmail { get; set; }
 
         [Display(Name = "Date Created")]
@@ -40,6 +43,9 @@ namespace ITHelpDesk.Web.Models
         [StringLength(255)]
         [Display(Name = "Requested For")]
         public string? RequestedFor { get; set; }
+
+        [StringLength(255)]
+        public string? RequestedForName { get; set; }
 
         [StringLength(255)]
         public string? RequestedForEmail { get; set; }
@@ -51,6 +57,9 @@ namespace ITHelpDesk.Web.Models
         [StringLength(255)]
         [Display(Name = "Assigned To")]
         public string? AssignedTo { get; set; }
+
+        [StringLength(255)]
+        public string? AssignedToName { get; set; }
 
         [StringLength(255)]
         public string? AssignedToEmail { get; set; }
@@ -67,6 +76,9 @@ namespace ITHelpDesk.Web.Models
 
         [StringLength(255)]
         public string? LastModifiedBy { get; set; }
+
+        [StringLength(255)]
+        public string? LastModifiedByName { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
 

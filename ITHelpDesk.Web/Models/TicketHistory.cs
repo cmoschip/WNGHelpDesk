@@ -23,6 +23,9 @@ namespace ITHelpDesk.Web.Models
         [StringLength(255)]
         public string ChangedBy { get; set; } = string.Empty;
 
+        [StringLength(255)]
+        public string? ChangedByName { get; set; }
+
         public DateTime ChangedDate { get; set; } = DateTime.Now;
 
         // Navigation property

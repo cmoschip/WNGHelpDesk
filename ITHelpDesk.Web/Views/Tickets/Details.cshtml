@@ -79,7 +79,7 @@
                         <strong>Category:</strong> @Model.Ticket.Category
                     </div>
                     <div class="col-md-6">
-                        <strong>Created By:</strong> @Model.Ticket.CreatedBy
+                        <strong>Created By:</strong> @(Model.Ticket.CreatedByName ?? Model.Ticket.CreatedBy)
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -87,7 +87,7 @@
                         <strong>Requested For:</strong>
                         @if (!string.IsNullOrWhiteSpace(Model.Ticket.RequestedFor))
                         {
-                            <text>@Model.Ticket.RequestedFor</text>
+                            <text>@(Model.Ticket.RequestedForName ?? Model.Ticket.RequestedFor)</text>
                             @if (!string.IsNullOrWhiteSpace(Model.Ticket.RequestedForEmail))
                             {
                                 <br /><small class="text-muted">@Model.Ticket.RequestedForEmail</small>
@@ -102,7 +102,7 @@
                         <strong>Assigned To:</strong>
                         @if (!string.IsNullOrWhiteSpace(Model.Ticket.AssignedTo))
                         {
-                            @Model.Ticket.AssignedTo
+                            @(Model.Ticket.AssignedToName ?? Model.Ticket.AssignedTo)
                         }
                         else
                         {
@@ -160,7 +160,7 @@
                                         </a>
                                         <br />
                                         <small class="text-muted">
-                                            Uploaded by @attachment.UploadedBy on @attachment.UploadedDate.ToString("MM/dd/yyyy hh:mm tt")
+                                            Uploaded by @(attachment.UploadedByName ?? attachment.UploadedBy) on @attachment.UploadedDate.ToString("MM/dd/yyyy hh:mm tt")
                                             (@(attachment.FileSize / 1024) KB)
                                         </small>
                                     </div>
@@ -198,7 +198,7 @@
                     {
                         <div class="card mb-3 @(comment.CommentType == "System" || comment.CommentType == "Status Change" || comment.CommentType == "Assignment" ? "border-secondary" : "")">
                             <div class="card-header @(comment.CommentType == "System" || comment.CommentType == "Status Change" || comment.CommentType == "Assignment" ? "bg-light" : "")">
-                                <strong>@comment.CreatedBy</strong>
+                                <strong>@(comment.CreatedByName ?? comment.CreatedBy)</strong>
                                 <span class="text-muted">- @comment.CreatedDate.ToString("MM/dd/yyyy hh:mm tt")</span>
                                 @if (comment.CommentType != "Comment")
                                 {
@@ -251,7 +251,7 @@
                         <li class="mb-2">
                             <strong>Last Modified:</strong><br />
                             @Model.Ticket.LastModifiedDate.Value.ToString("MM/dd/yyyy hh:mm tt")<br />
-                            <small class="text-muted">by @Model.Ticket.LastModifiedBy</small>
+                            <small class="text-muted">by @(Model.Ticket.LastModifiedByName ?? Model.Ticket.LastModifiedBy)</small>
                         </li>
                     }
                     @if (Model.Ticket.ResolvedDate.HasValue)
@@ -288,7 +288,7 @@
                         {
                             <li class="mb-3">
                                 <small class="text-muted">@history.ChangedDate.ToString("MM/dd/yyyy hh:mm tt")</small><br />
-                                <strong>@history.ChangedBy</strong> changed <strong>@history.FieldChanged</strong><br />
+                                <strong>@(history.ChangedByName ?? history.ChangedBy)</strong> changed <strong>@history.FieldChanged</strong><br />
                                 @if (!string.IsNullOrWhiteSpace(history.OldValue))
                                 {
                                     <span class="text-muted">From: @history.OldValue</span><br />

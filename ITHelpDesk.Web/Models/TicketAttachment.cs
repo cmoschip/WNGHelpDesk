@@ -33,6 +33,9 @@ namespace ITHelpDesk.Web.Models
         [Display(Name = "Uploaded By")]
         public string UploadedBy { get; set; } = string.Empty;
 
+        [StringLength(255)]
+        public string? UploadedByName { get; set; }
+
         [Required]
         [Display(Name = "Uploaded Date")]
         public DateTime UploadedDate { get; set; } = DateTime.Now;
