@@ -22,7 +22,7 @@
                 <h5><i class="bi bi-ticket-detailed"></i> Ticket Information</h5>
             </div>
             <div class="card-body">
-                <form asp-action="Create" method="post">
+                <form asp-action="Create" method="post" enctype="multipart/form-data">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
                     <div class="mb-3">
@@ -70,11 +70,22 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="RequestedFor" class="form-label"></label>
-                                <input asp-for="RequestedFor" class="form-control" placeholder="Enter username (e.g., jsmith)" />
+                                <input asp-for="RequestedFor" class="form-control" id="RequestedFor" placeholder="Enter username (e.g., jsmith)" />
                                 <span asp-validation-for="RequestedFor" class="text-danger"></span>
                                 <small class="form-text text-muted">Who is this ticket for? Enter their AD username</small>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="ComputerName" class="form-label"></label>
+                                <input asp-for="ComputerName" class="form-control" id="ComputerName" placeholder="Enter computer name" />
+                                <span asp-validation-for="ComputerName" class="text-danger"></span>
+                                <small class="form-text text-muted">Which computer is having the issue?</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="AssignedTo" class="form-label"></label>
@@ -89,9 +100,6 @@
                                 <small class="form-text text-muted">Which IT staff member will handle this?</small>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="DueDate" class="form-label"></label>
@@ -100,6 +108,12 @@
                                 <small class="form-text text-muted">Optional - Leave blank if no due date</small>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label">Attachments</label>
+                        <input type="file" class="form-control" id="attachments" name="attachments" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xlsx,.zip" />
+                        <small class="form-text text-muted">Optional - Attach screenshots or documents (max 10MB per file)</small>
                     </div>
 
                     <hr />
@@ -179,6 +193,32 @@
                 minLength: 2,
                 select: function(event, ui) {
                     // When user selects, set the username as the value
+                    $(this).val(ui.item.value);
+                    return false;
+                }
+            });
+
+            // Autocomplete for Computer Name field
+            $("#ComputerName").autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: "/api/Users/SearchComputers",
+                        data: { term: request.term },
+                        success: function(data) {
+                            response(data.map(function(item) {
+                                return {
+                                    label: item.label,
+                                    value: item.name
+                                };
+                            }));
+                        },
+                        error: function() {
+                            response([]);
+                        }
+                    });
+                },
+                minLength: 2,
+                select: function(event, ui) {
                     $(this).val(ui.item.value);
                     return false;
                 }

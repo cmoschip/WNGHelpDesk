@@ -33,5 +33,10 @@ namespace ITHelpDesk.Web.Services
         /// Gets all groups a user is a member of
         /// </summary>
         List<string> GetUserGroups(string username);
+
+        /// <summary>
+        /// Searches for computers in Active Directory
+        /// </summary>
+        List<string> SearchComputers(string searchTerm);
     }
 }

@@ -14,12 +14,17 @@ namespace ITHelpDesk.Web.Controllers
         private readonly HelpDeskContext _context;
         private readonly IActiveDirectoryService _adService;
         private readonly ILogger<TicketsController> _logger;
+        private readonly IEmailService _emailService;
+        private readonly IWebHostEnvironment _environment;
 
-        public TicketsController(HelpDeskContext context, IActiveDirectoryService adService, ILogger<TicketsController> logger)
+        public TicketsController(HelpDeskContext context, IActiveDirectoryService adService,
+            ILogger<TicketsController> logger, IEmailService emailService, IWebHostEnvironment environment)
         {
             _context = context;
             _adService = adService;
             _logger = logger;
+            _emailService = emailService;
+            _environment = environment;
         }
 
         // GET: Tickets
@@ -95,6 +100,7 @@ namespace ITHelpDesk.Web.Controllers
             }
 
             var ticket = await _context.Tickets
+                .Include(t => t.Attachments)
                 .FirstOrDefaultAsync(m => m.TicketId == id);
 
             if (ticket == null)
@@ -147,7 +153,7 @@ namespace ITHelpDesk.Web.Controllers
         // POST: Tickets/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Title,Description,Priority,Category,RequestedFor,AssignedTo,DueDate")] Ticket ticket)
+        public async Task<IActionResult> Create([Bind("Title,Description,Priority,Category,RequestedFor,ComputerName,AssignedTo,DueDate")] Ticket ticket, List<IFormFile>? attachments)
         {
             _logger.LogInformation("Create POST method called for ticket: {Title}", ticket.Title);
 
@@ -219,6 +225,40 @@ namespace ITHelpDesk.Web.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Handle file attachments
+                if (attachments != null && attachments.Any())
+                {
+                    await SaveAttachments(ticket.TicketId, attachments, ticket.CreatedBy);
+                }
+
+                // Send email notifications
+                try
+                {
+                    // Notify the person the ticket is for (if different from creator)
+                    if (!string.IsNullOrWhiteSpace(ticket.RequestedForEmail) &&
+                        ticket.RequestedForEmail != ticket.CreatedByEmail)
+                    {
+                        await _emailService.SendTicketCreatedEmailAsync(
+                            ticket.TicketId,
+                            ticket.RequestedForEmail,
+                            ticket.RequestedFor ?? "User");
+                    }
+
+                    // Notify assigned IT staff
+                    if (!string.IsNullOrWhiteSpace(ticket.AssignedToEmail))
+                    {
+                        await _emailService.SendTicketAssignedEmailAsync(
+                            ticket.TicketId,
+                            ticket.AssignedToEmail,
+                            ticket.AssignedTo ?? "IT Staff",
+                            ticket.CreatedBy);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send email notifications for ticket #{TicketId}", ticket.TicketId);
+                }
+
                 _logger.LogInformation("Ticket #{TicketId} created successfully", ticket.TicketId);
                 TempData["SuccessMessage"] = $"Ticket #{ticket.TicketId} created successfully.";
                 return RedirectToAction(nameof(Details), new { id = ticket.TicketId });
@@ -252,7 +292,7 @@ namespace ITHelpDesk.Web.Controllers
         // POST: Tickets/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("TicketId,Title,Description,Status,Priority,Category,RequestedFor,AssignedTo,DueDate,CreatedBy,CreatedByEmail,CreatedDate")] Ticket ticket)
+        public async Task<IActionResult> Edit(int id, [Bind("TicketId,Title,Description,Status,Priority,Category,RequestedFor,ComputerName,AssignedTo,DueDate,CreatedBy,CreatedByEmail,CreatedDate")] Ticket ticket, List<IFormFile>? attachments)
         {
             if (id != ticket.TicketId)
             {
@@ -314,6 +354,61 @@ namespace ITHelpDesk.Web.Controllers
 
                     _context.Update(ticket);
                     await _context.SaveChangesAsync();
+
+                    // Handle file attachments
+                    if (attachments != null && attachments.Any())
+                    {
+                        await SaveAttachments(ticket.TicketId, attachments, currentUser);
+                    }
+
+                    // Send email notifications based on status changes
+                    try
+                    {
+                        // If status changed to Resolved
+                        if (ticket.Status == "Resolved" && existingTicket.Status != "Resolved")
+                        {
+                            if (!string.IsNullOrWhiteSpace(ticket.RequestedForEmail))
+                            {
+                                await _emailService.SendTicketResolvedEmailAsync(
+                                    ticket.TicketId,
+                                    ticket.RequestedForEmail,
+                                    ticket.RequestedFor ?? "User");
+                            }
+                        }
+                        // If status changed to Closed
+                        else if (ticket.Status == "Closed" && existingTicket.Status != "Closed")
+                        {
+                            if (!string.IsNullOrWhiteSpace(ticket.RequestedForEmail))
+                            {
+                                await _emailService.SendTicketClosedEmailAsync(
+                                    ticket.TicketId,
+                                    ticket.RequestedForEmail,
+                                    ticket.RequestedFor ?? "User");
+                            }
+                        }
+                        // If assignment changed
+                        else if (ticket.AssignedTo != existingTicket.AssignedTo && !string.IsNullOrWhiteSpace(ticket.AssignedToEmail))
+                        {
+                            await _emailService.SendTicketAssignedEmailAsync(
+                                ticket.TicketId,
+                                ticket.AssignedToEmail,
+                                ticket.AssignedTo ?? "IT Staff",
+                                currentUser);
+                        }
+                        // For any other updates
+                        else if (!string.IsNullOrWhiteSpace(ticket.RequestedForEmail))
+                        {
+                            await _emailService.SendTicketUpdatedEmailAsync(
+                                ticket.TicketId,
+                                ticket.RequestedForEmail,
+                                ticket.RequestedFor ?? "User",
+                                "Your ticket has been updated.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send email notifications for ticket #{TicketId}", ticket.TicketId);
+                    }
 
                     TempData["SuccessMessage"] = "Ticket updated successfully.";
                 }
@@ -500,6 +595,96 @@ namespace ITHelpDesk.Web.Controllers
 
             _context.TicketHistory.Add(history);
             await _context.SaveChangesAsync();
+        }
+
+        private async Task SaveAttachments(int ticketId, List<IFormFile> attachments, string uploadedBy)
+        {
+            var uploadPath = Path.Combine(_environment.ContentRootPath, "App_Data", "Attachments", ticketId.ToString());
+            Directory.CreateDirectory(uploadPath);
+
+            foreach (var file in attachments)
+            {
+                if (file.Length > 0)
+                {
+                    // Validate file size (10MB limit)
+                    if (file.Length > 10 * 1024 * 1024)
+                    {
+                        _logger.LogWarning("File {FileName} exceeds size limit", file.FileName);
+                        continue;
+                    }
+
+                    // Generate safe filename
+                    var fileName = Path.GetFileName(file.FileName);
+                    var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
+                    var filePath = Path.Combine(uploadPath, uniqueFileName);
+
+                    // Save file to disk
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    // Save attachment record to database
+                    var attachment = new TicketAttachment
+                    {
+                        TicketId = ticketId,
+                        FileName = fileName,
+                        FilePath = filePath,
+                        FileSize = file.Length,
+                        ContentType = file.ContentType,
+                        UploadedBy = uploadedBy,
+                        UploadedDate = DateTime.Now
+                    };
+
+                    _context.TicketAttachments.Add(attachment);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        // GET: Tickets/DownloadAttachment/5
+        public async Task<IActionResult> DownloadAttachment(int id)
+        {
+            var attachment = await _context.TicketAttachments.FindAsync(id);
+            if (attachment == null || !System.IO.File.Exists(attachment.FilePath))
+            {
+                return NotFound();
+            }
+
+            var memory = new MemoryStream();
+            using (var stream = new FileStream(attachment.FilePath, FileMode.Open))
+            {
+                await stream.CopyToAsync(memory);
+            }
+            memory.Position = 0;
+
+            return File(memory, attachment.ContentType ?? "application/octet-stream", attachment.FileName);
+        }
+
+        // POST: Tickets/DeleteAttachment/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAttachment(int id, int ticketId)
+        {
+            var attachment = await _context.TicketAttachments.FindAsync(id);
+            if (attachment == null)
+            {
+                return NotFound();
+            }
+
+            // Delete file from disk
+            if (System.IO.File.Exists(attachment.FilePath))
+            {
+                System.IO.File.Delete(attachment.FilePath);
+            }
+
+            // Delete database record
+            _context.TicketAttachments.Remove(attachment);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Attachment deleted successfully.";
+            return RedirectToAction(nameof(Details), new { id = ticketId });
         }
     }
 }

@@ -13,6 +13,7 @@ namespace ITHelpDesk.Web.Data
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TicketComment> TicketComments { get; set; }
         public DbSet<TicketHistory> TicketHistory { get; set; }
+        public DbSet<TicketAttachment> TicketAttachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -37,6 +38,11 @@ namespace ITHelpDesk.Web.Data
                     .WithOne(e => e.Ticket)
                     .HasForeignKey(e => e.TicketId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(e => e.Attachments)
+                    .WithOne(e => e.Ticket)
+                    .HasForeignKey(e => e.TicketId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Configure TicketComment entity
@@ -55,6 +61,14 @@ namespace ITHelpDesk.Web.Data
                 entity.ToTable("TicketHistory");
                 entity.HasKey(e => e.HistoryId);
                 entity.Property(e => e.ChangedDate).HasDefaultValueSql("GETDATE()");
+            });
+
+            // Configure TicketAttachment entity
+            modelBuilder.Entity<TicketAttachment>(entity =>
+            {
+                entity.ToTable("TicketAttachments");
+                entity.HasKey(e => e.TicketAttachmentId);
+                entity.Property(e => e.UploadedDate).HasDefaultValueSql("GETDATE()");
             });
         }
     }

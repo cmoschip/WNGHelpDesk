@@ -30,6 +30,9 @@ builder.Services.AddAuthorization(options =>
 // Register Active Directory service
 builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
 
+// Register Email service
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 // Add session support for better user experience
 builder.Services.AddSession(options =>
 {

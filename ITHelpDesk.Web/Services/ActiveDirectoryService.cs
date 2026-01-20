@@ -220,6 +220,37 @@ namespace ITHelpDesk.Web.Services
             }
         }
 
+        public List<string> SearchComputers(string searchTerm)
+        {
+            var computers = new List<string>();
+
+            try
+            {
+                using (var context = new PrincipalContext(ContextType.Domain, _domain))
+                using (var computerPrincipal = new ComputerPrincipal(context))
+                {
+                    computerPrincipal.Name = $"*{searchTerm}*";
+                    using (var searcher = new PrincipalSearcher(computerPrincipal))
+                    {
+                        var results = searcher.FindAll().Take(50); // Limit to 50 results
+                        foreach (Principal result in results)
+                        {
+                            if (result is ComputerPrincipal cp && !string.IsNullOrEmpty(cp.Name))
+                            {
+                                computers.Add(cp.Name);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error searching computers: {ex.Message}");
+            }
+
+            return computers.OrderBy(c => c).ToList();
+        }
+
         private string? GetProperty(DirectoryEntry? entry, string propertyName)
         {
             if (entry == null || !entry.Properties.Contains(propertyName))

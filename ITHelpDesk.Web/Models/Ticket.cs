@@ -45,6 +45,10 @@ namespace ITHelpDesk.Web.Models
         public string? RequestedForEmail { get; set; }
 
         [StringLength(255)]
+        [Display(Name = "Computer Name")]
+        public string? ComputerName { get; set; }
+
+        [StringLength(255)]
         [Display(Name = "Assigned To")]
         public string? AssignedTo { get; set; }
 
@@ -69,6 +73,7 @@ namespace ITHelpDesk.Web.Models
         // Navigation properties
         public virtual ICollection<TicketComment> Comments { get; set; } = new List<TicketComment>();
         public virtual ICollection<TicketHistory> History { get; set; } = new List<TicketHistory>();
+        public virtual ICollection<TicketAttachment> Attachments { get; set; } = new List<TicketAttachment>();
 
         [NotMapped]
         public bool IsOverdue => DueDate.HasValue &&

@@ -36,5 +36,24 @@ namespace ITHelpDesk.Web.Controllers
 
             return Ok(results);
         }
+
+        // GET: api/Users/SearchComputers?term=workstation
+        [HttpGet("SearchComputers")]
+        public IActionResult SearchComputers(string term)
+        {
+            if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
+            {
+                return Ok(new List<object>());
+            }
+
+            var computers = _adService.SearchComputers(term);
+            var results = computers.Select(c => new
+            {
+                name = c,
+                label = c
+            }).Take(10).ToList();
+
+            return Ok(results);
+        }
     }
 }
