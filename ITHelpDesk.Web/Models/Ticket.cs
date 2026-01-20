@@ -17,7 +17,6 @@ namespace ITHelpDesk.Web.Models
         [Display(Name = "Description")]
         public string Description { get; set; } = string.Empty;
 
-        [Required]
         [StringLength(50)]
         public string Status { get; set; } = "New";
 
@@ -28,7 +27,6 @@ namespace ITHelpDesk.Web.Models
         [StringLength(100)]
         public string? Category { get; set; }
 
-        [Required]
         [StringLength(255)]
         [Display(Name = "Created By")]
         public string CreatedBy { get; set; } = string.Empty;
