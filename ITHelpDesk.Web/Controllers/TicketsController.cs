@@ -391,6 +391,9 @@ namespace ITHelpDesk.Web.Controllers
                     // Send email notifications based on status changes
                     try
                     {
+                        var statusChanged = ticket.Status != existingTicket.Status;
+                        var assignmentChanged = ticket.AssignedTo != existingTicket.AssignedTo;
+
                         // If status changed to Resolved
                         if (ticket.Status == "Resolved" && existingTicket.Status != "Resolved")
                         {
@@ -413,8 +416,8 @@ namespace ITHelpDesk.Web.Controllers
                                     ticket.RequestedFor ?? "User");
                             }
                         }
-                        // If assignment changed
-                        else if (ticket.AssignedTo != existingTicket.AssignedTo && !string.IsNullOrWhiteSpace(ticket.AssignedToEmail))
+                        // If assignment changed - notify new assignee
+                        else if (assignmentChanged && !string.IsNullOrWhiteSpace(ticket.AssignedToEmail))
                         {
                             await _emailService.SendTicketAssignedEmailAsync(
                                 ticket.TicketId,
@@ -422,7 +425,7 @@ namespace ITHelpDesk.Web.Controllers
                                 ticket.AssignedTo ?? "IT Staff",
                                 currentUser);
                         }
-                        // For any other updates
+                        // For any other updates - notify requested for person
                         else if (!string.IsNullOrWhiteSpace(ticket.RequestedForEmail))
                         {
                             await _emailService.SendTicketUpdatedEmailAsync(
@@ -430,6 +433,24 @@ namespace ITHelpDesk.Web.Controllers
                                 ticket.RequestedForEmail,
                                 ticket.RequestedFor ?? "User",
                                 "Your ticket has been updated.");
+                        }
+
+                        // Always notify assigned person about updates (unless they made the change or assignment just changed)
+                        if (!assignmentChanged &&
+                            !string.IsNullOrWhiteSpace(ticket.AssignedTo) &&
+                            !string.IsNullOrWhiteSpace(ticket.AssignedToEmail) &&
+                            !ticket.AssignedTo.Equals(currentUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var updaterName = currentUserName ?? currentUser;
+                            var updateDescription = statusChanged
+                                ? $"{updaterName} changed the status to '{ticket.Status}'."
+                                : $"{updaterName} updated the ticket.";
+
+                            await _emailService.SendTicketUpdatedEmailAsync(
+                                ticket.TicketId,
+                                ticket.AssignedToEmail,
+                                ticket.AssignedToName ?? ticket.AssignedTo,
+                                updateDescription);
                         }
                     }
                     catch (Exception ex)
@@ -496,6 +517,26 @@ namespace ITHelpDesk.Web.Controllers
             ticket.LastModifiedDate = DateTime.Now;
 
             await _context.SaveChangesAsync();
+
+            // Send email notification to assigned person if they didn't make the change
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(ticket.AssignedTo) &&
+                    !string.IsNullOrWhiteSpace(ticket.AssignedToEmail) &&
+                    !ticket.AssignedTo.Equals(currentUser, StringComparison.OrdinalIgnoreCase))
+                {
+                    var commenterName = adUser?.DisplayName ?? currentUser;
+                    await _emailService.SendTicketUpdatedEmailAsync(
+                        ticket.TicketId,
+                        ticket.AssignedToEmail,
+                        ticket.AssignedToName ?? ticket.AssignedTo,
+                        $"{commenterName} added a comment: \"{commentText}\"");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send comment notification email for ticket #{TicketId}", ticketId);
+            }
 
             TempData["SuccessMessage"] = "Comment added successfully.";
             return RedirectToAction(nameof(Details), new { id = ticketId });
