@@ -13,11 +13,13 @@ namespace ITHelpDesk.Web.Controllers
     {
         private readonly HelpDeskContext _context;
         private readonly IActiveDirectoryService _adService;
+        private readonly ILogger<TicketsController> _logger;
 
-        public TicketsController(HelpDeskContext context, IActiveDirectoryService adService)
+        public TicketsController(HelpDeskContext context, IActiveDirectoryService adService, ILogger<TicketsController> logger)
         {
             _context = context;
             _adService = adService;
+            _logger = logger;
         }
 
         // GET: Tickets
@@ -147,8 +149,20 @@ namespace ITHelpDesk.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Title,Description,Priority,Category,RequestedFor,AssignedTo,DueDate")] Ticket ticket)
         {
+            _logger.LogInformation("Create POST method called for ticket: {Title}", ticket.Title);
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("ModelState is invalid. Errors: {Errors}",
+                    string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+                ViewBag.ITStaff = _adService.GetITSupportUsers();
+                return View(ticket);
+            }
+
             if (ModelState.IsValid)
             {
+                _logger.LogInformation("ModelState is valid, proceeding to save ticket");
+
                 // Set system fields
                 ticket.CreatedBy = User.Identity?.Name ?? "Unknown";
                 ticket.CreatedDate = DateTime.Now;
@@ -205,9 +219,13 @@ namespace ITHelpDesk.Web.Controllers
 
                 await _context.SaveChangesAsync();
 
+                _logger.LogInformation("Ticket #{TicketId} created successfully", ticket.TicketId);
                 TempData["SuccessMessage"] = $"Ticket #{ticket.TicketId} created successfully.";
                 return RedirectToAction(nameof(Details), new { id = ticket.TicketId });
             }
+
+            _logger.LogWarning("Reached end of Create method without saving - ModelState was invalid");
+
 
             ViewBag.ITStaff = _adService.GetITSupportUsers();
             return View(ticket);
